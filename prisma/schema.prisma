@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("POSTGRES_PRISMA_URL")
+  directUrl = env("POSTGRES_URL_NON_POOLING")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  SUPERVISOR
+  PARTICIPANT
+  PEER
+  JUNIOR
+}
+
+model User {
+  id        String      @id @default(cuid())
+  email     String      @unique
+  password  String      
+  name      String   
+  level     Int            
+  role      Role        @default(ADMIN)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  
+  manager      Manager?    @relation("UserManager")
+  supervisor   Supervisor? @relation("UserSupervisor")
+  participant   Participant? @relation("UserParticipant")
+  peer         Peer?       @relation("UserPeer")
+  junior       Junior?     @relation("UserJunior")
+}
+
+model Manager {
+  id        String       @id @default(cuid())
+  userId    String       @unique 
+  user      User         @relation("UserManager", fields: [userId], references: [id])
+  managedBy Supervisor[]  @relation("ManagerSupervisors")
+  
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model Supervisor {
+  id             String       @id @default(cuid())
+  userId         String       @unique 
+  user           User         @relation("UserSupervisor", fields: [userId], references: [id])
+  
+  manages        Manager[]    @relation("ManagerSupervisors")
+  participants   Participant[] @relation("SupervisorParticipants")
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Participant {
+  id            String       @id @default(cuid())
+  userId        String       @unique 
+  user          User         @relation("UserParticipant", fields: [userId], references: [id])
+  
+  supervisor    Supervisor?  @relation("SupervisorParticipants", fields: [supervisorId], references: [id])
+  supervisorId  String
+  peers         Peer[]       @relation("ParticipantPeers")
+  juniors       Junior[]     @relation("ParticipantJuniors")
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Peer {
+  id             String       @id @default(cuid())
+  userId         String       @unique 
+  user           User         @relation("UserPeer", fields: [userId], references: [id])
+  
+  participant    Participant   @relation("ParticipantPeers", fields: [participantId], references: [id])
+  participantId  String
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Junior {
+  id             String       @id @default(cuid())
+  userId         String       @unique 
+  user           User         @relation("UserJunior", fields: [userId], references: [id])
+  
+  participant    Participant   @relation("ParticipantJuniors", fields: [participantId], references: [id])
+  participantId  String
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
